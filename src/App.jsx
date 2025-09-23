@@ -8,7 +8,7 @@ import Shuttle from "./transport";
 const App = () => {
   return (
     <div>
-      <BrowserRouter basename="Transport">
+      <BrowserRouter basename="/Transport">
         <Routes>
           <Route path="/" element={<Start />} ></Route>
           <Route path="/home" element={<Home />} ></Route>
