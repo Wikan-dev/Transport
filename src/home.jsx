@@ -93,7 +93,7 @@ const Home = () => {
 
                 <div className="flex gap-20 justify-center mt-15 max-w-full flex-wrap">
                     <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>
-                    <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>
+                    <Link to='/shuttle'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>
                     <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>   
                 </div>
 
