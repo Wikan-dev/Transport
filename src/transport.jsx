@@ -61,7 +61,7 @@ function ChangeView({ center, zoom = 15}) {
   return null;
 }
 
-export default function Shuttle() {
+const Shuttle = () => {
   const [position, setPosition] = useState({
     lat: -8.65,
     lng: 115.82
@@ -88,3 +88,5 @@ export default function Shuttle() {
     </div>
   )
 }
+
+export default Shuttle;
