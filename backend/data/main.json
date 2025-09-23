@@ -1,0 +1,29 @@
+{
+    "tour" :[ 
+    {
+        "nama" : "[FAMILY] - Uluwatu",
+        "harga" : 100000,
+        "gambar" : "/tour1.png"
+    },
+    {
+        "nama" : "[FAMILY] - Uluwatu",
+        "harga" : 100000,
+        "gambar" : "/tour1.png"
+    },
+    {
+        "nama" : "[FAMILY] - Uluwatu",
+        "harga" : 100000,
+        "gambar" : "/tour1.png"
+    },
+    {
+        "nama" : "[FAMILY] - Uluwatu",
+        "harga" : 100000,
+        "gambar" : "/tour1.png"
+    },
+    {
+        "nama" : "[FAMILY] - Uluwatu",
+        "harga" : 100000,
+        "gambar" : "/tour1.png"
+    }
+]
+}
