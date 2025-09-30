@@ -28,10 +28,37 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function SearchBox({onSelect, userLocation, setStart, setEnd, setRoute, start, end , setSearchLocation}) {
+const Pesanan = ({ awal, akhir, distance }) => {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="absolute z-20 bottom-0 w-full bg-white p-5 rounded-t-3xl drop-shadow-2xl transition-all duration-200 trnsition-ease-in" style={{ height: show ? '300px' : '50px'}}>
+      <div onClick={() => setShow(!show)} className="w-full h-5">
+        <div className="w-20 bg-gray-300 h-3 rounded-xl mx-auto"></div>
+
+        <div>
+          <div className="mt-5">
+            <h1 className="font-bold text-[20px] mb-3">Titik jemput</h1>
+            <input type="text" value={awal} readOnly className="pl-5 bg-white outline-1 w-full h-10 rounded-xl focus:outline-none" placeholder="input titik jemput" />
+          </div>
+          <div className="mt-5">
+            <h1 className="font-bold text-[20px] mb-3">Titik antar</h1>
+            <input type="text" value={akhir} readOnly className="pl-5 bg-white outline-1 w-full h-10 rounded-xl focus:outline-none" placeholder="input titik jemput" />
+          </div>
+        </div>
+        {distance && (
+          <div>
+            jarak: {distance.toFixed(2)} km
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+function SearchBox({onSelect, userLocation, setStart, setEnd, setRoute, start, end , setSearchLocation, awal, setAwal, akhir, setAkhir}) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState([]);
-  const [selected, setSelected] = useState(null); 
+  
 
  useEffect(() => {
   if (!query) {
@@ -74,42 +101,46 @@ function SearchBox({onSelect, userLocation, setStart, setEnd, setRoute, start, e
   return () => clearTimeout(timeout);
 }, [query, userLocation]);
 
-async function handleEnterLocation() {
-  if (!query) {
-    alert("Please enter a location");
-    return;
-  }
+// async function handleEnterLocation() {
+//   if (!query) {
+//     alert("Please enter a location");
+//     return;
+//   }
 
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`;
-  const res = await fetch(url);
-  const data = await res.json();
+//   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`;
+//   const res = await fetch(url);
+//   const data = await res.json();
 
-  if (data.length > 0) {
-    const place = data[0];
-    const loc = {
-      lat: parseFloat(place.lat),
-      lng: parseFloat(place.lon),
-      label: place.display_name,
-    };
+//   if (data.length > 0) {
+//     const place = data[0];
+//     const loc = {
+//       lat: parseFloat(place.lat),
+//       lng: parseFloat(place.lon),
+//       label: place.display_name,
+//     };
 
-    if (!start) {
-      setStart(loc);
-    } else if (!end) {
-      setEnd(loc);
-    } else {
-      setStart(loc);
-      setEnd(null);
-      setRoute(null);
-    }
+//     if (!start) {
+//       setStart(loc);
+//     } else if (!end) {
+//       setEnd(loc);
+//     } else {
+//       setStart(loc);
+//       setEnd(null);
+//       setRoute(null);
+//     }
 
-    setSearchLocation(loc);
-    onSelect(loc);
-    setQuery(place.display_name);
-    setResult([]);
-  } else {
-    alert("Location not found");
-  }
-}
+    
+
+//     setSearchLocation(loc);
+//     onSelect(loc);
+//     setQuery(place.display_name);
+//     setResult([]);
+//   } else {
+//     alert("Location not found");
+//   }
+//   // console.log(awal, akhir);
+// }a
+
 
 // function handleSelect() {
 //   if (query != "") {
@@ -125,6 +156,10 @@ async function handleEnterLocation() {
 
   return (
     <div className="absolute z-20 bg-white w-[90%] left-[50%] right-[50%] translate-x-[-50%] mt-10 rounded-2xl pb-4">
+      <div className="hidden">
+        {/* <Pesanan awal={awal} akhir={akhir} /> */}
+      </div>
+
       <img src={hapus} alt="cancel" onClick={() => {setQuery(""), setResult([])}} className={`absolute w-10 right-4 top-6  ${result.length > 0 ? 'block' : 'hidden'}`} />
       <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="cari lokasi..." className="px-5 w-[85%] h-15 mt-3 focus:outline-none font-bold text-[20px] truncate" />
      <div className={`transition-all duration-300 ease-in-out overflow-auto ${result.length > 0 ? "max-h-60 opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
@@ -147,6 +182,18 @@ async function handleEnterLocation() {
               setEnd(null);
               setRoute(null);
             }
+
+            if (!awal) {
+              setAwal(place.display_name);
+            } else if (!akhir) {
+              setAkhir(place.display_name);
+            } else {
+              setAwal(place.display_name);
+              setAkhir("");
+              setRoute(null);
+            }
+
+            console.log("awal: ", awal, "Akhir: ", akhir);
 
             onSelect(loc);
             setResult([])
@@ -198,7 +245,10 @@ function LocationMarker({ setStart, setEnd, start, end}) {
   }});
 }
 
+
 const Shuttle = () => {
+  const [awal, setAwal] = useState("");
+  const [akhir, setAkhir] = useState(""); 
   const [position, setPosition] = useState({
     lat: -8.65,
     lng: 115.82
@@ -251,7 +301,9 @@ const Shuttle = () => {
 
   return (
     <div className={`h-[100vh] w-[100%]`}>
-      <SearchBox onSelect={(loc) => setPosition(loc)} userLocation={userLocation} setStart={setStart} setEnd={setEnd} setRoute={setRoute} start={start} end={end} setSearchLocation={setSearchLocation} />
+      <Pesanan awal={awal} akhir={akhir} distance={distance} />
+
+      <SearchBox onSelect={(loc) => setPosition(loc)} userLocation={userLocation} setStart={setStart} setEnd={setEnd} setRoute={setRoute} start={start} end={end} setSearchLocation={setSearchLocation} awal={awal} setAwal={setAwal} akhir={akhir} setAkhir={setAkhir} />
 
       <MapContainer center={[position.lat, position.lng]} zoom={13} scrollWheelZoom={true} zoomControl={false} className={`h-[100%] w-[100%] relative z-10`}>
         <TileLayer
@@ -259,7 +311,7 @@ const Shuttle = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <ChangeView center={position ? [position.lat, position.lng] : initial} zoom={15} />
+        <ChangeView center={position ? [position.lat, position.lng] : initial} zoom={18} />
 
         
 
@@ -283,11 +335,7 @@ const Shuttle = () => {
           <Polyline positions={route} color="blue" />
         )}
 
-        {distance && (
-          <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded-xl shadow-lg font-bold">
-            jarak: {distance.toFixed(2)} km
-          </div>
-        )}
+        
 
         {/* {searchLocation && (
           <Marker position={[searchLocation.lat, searchLocation.lng]}>
