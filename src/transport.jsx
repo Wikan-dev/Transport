@@ -4,6 +4,14 @@ import "leaflet/dist/leaflet.css";
 import hapus from './assets/cancel.svg';
 import { data } from "react-router-dom";
 
+import L from "leaflet";
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+})
+
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius bumi dalam kilometer 
   const dLat = (lat2 - lat1) * Math.PI / 180;
