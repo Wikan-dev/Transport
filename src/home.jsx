@@ -10,13 +10,14 @@ import listIcon from './assets/listIcon.svg';
 import mail from './assets/Mail.svg';
 import insta from './assets/Instagram.svg';
 import phone from './assets/Phone.svg';
+import car from './assets/car.svg';
 import data from '../backend/data/main.json';
 import { useLocation, Link } from "react-router-dom";
 
 const MiniIcon = ({gambar, title}) => {
     return (
         <div className="relative z-20">
-            <div className="bg-white drop-shadow-xl w-fit p-2 rounded-full mx-auto">
+            <div className="bg-white drop-shadow-xl w-14 p-2 rounded-full mx-auto">
                 <img src={gambar} alt="price list" />
             </div>
             <h1>
@@ -93,11 +94,11 @@ const Home = () => {
 
                 <div className="flex gap-20 justify-center mt-15 max-w-full flex-wrap">
                     <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>
-                    <Link to='/shuttle'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>
+                    <Link to='/shuttle'><MiniIcon gambar={car} title={'shuttle'} /></Link>
                     <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>   
                 </div>
 
-                <div className="relative z-20 px-5 mt-5 flex flex-wrap flex-row justify-between gap-5 px-7">
+                <div className="relative z-20 px-5 mt-5 flex flex-wrap flex-row justify-center gap-15 px-7 max-w-full">
                     {data.tour.map((item, i) => (
                         <TourList key={i} gambar={import.meta.env.BASE_URL + item.gambar.slice(1)} harga={item.harga} nama={item.nama} />
                     ))}
