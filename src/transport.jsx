@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import hapus from './assets/cancel.svg';
+import { data } from "react-router-dom";
 
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius bumi dalam kilometer 
@@ -16,9 +17,10 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function SearchBox({onSelect, userLocation}) {
+function SearchBox({onSelect, userLocation, setStart, setEnd, setRoute, start, end , setSearchLocation}) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState([]);
+  const [selected, setSelected] = useState(null); 
 
  useEffect(() => {
   if (!query) {
@@ -61,6 +63,54 @@ function SearchBox({onSelect, userLocation}) {
   return () => clearTimeout(timeout);
 }, [query, userLocation]);
 
+async function handleEnterLocation() {
+  if (!query) {
+    alert("Please enter a location");
+    return;
+  }
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (data.length > 0) {
+    const place = data[0];
+    const loc = {
+      lat: parseFloat(place.lat),
+      lng: parseFloat(place.lon),
+      label: place.display_name,
+    };
+
+    if (!start) {
+      setStart(loc);
+    } else if (!end) {
+      setEnd(loc);
+    } else {
+      setStart(loc);
+      setEnd(null);
+      setRoute(null);
+    }
+
+    setSearchLocation(loc);
+    onSelect(loc);
+    setQuery(place.display_name);
+    setResult([]);
+  } else {
+    alert("Location not found");
+  }
+}
+
+// function handleSelect() {
+//   if (query != "") {
+//     setSelected(query);
+//     console.log("Selected location:", query);
+//   } else {
+//     alert("Please select a location");
+//   }
+// }
+// console.log(query);
+
+// console.log(start, end, route);
 
   return (
     <div className="absolute z-20 bg-white w-[90%] left-[50%] right-[50%] translate-x-[-50%] mt-10 rounded-2xl pb-4">
@@ -70,13 +120,27 @@ function SearchBox({onSelect, userLocation}) {
       {result.length > 0 && (
         <ul className="px-5 font-bold text-[20px]">
           {result.map((place, i) => (
-            <li className="w-80 truncate bg-white my-3 p-2 rounded-xl border-b-2 drop-shadow-xl" key={i} onClick={() => {onSelect({
+            <li className="w-80 truncate bg-white my-3 p-2 rounded-xl border-b-2 drop-shadow-xl" key={i} onClick={() => {            
+            const loc = {
               lat: parseFloat(place.lat),
               lng: parseFloat(place.lon),
               label: place.display_name,
-            });
+            };
+
+            if (!start) {
+              setStart(loc);
+            } else if (!end) {
+              setEnd(loc);
+            } else {
+              setStart(loc);
+              setEnd(null);
+              setRoute(null);
+            }
+
+            onSelect(loc);
             setResult([])
             setQuery(place.display_name);
+            setSearchLocation(loc);
           }}>
               {place.distance && (
                     <span className="block text-sm text-gray-500">
@@ -88,6 +152,18 @@ function SearchBox({onSelect, userLocation}) {
           ))}
         </ul>
       )}
+     </div>
+
+     <div className="absolute flex flex-row">
+      {/* <button className=" w-50 h-10 bg-green-500 top-50 text-white font-bold" onClick={() => handleEnterLocation()}>enter</button> */}
+      {/* <button className=" w-50 h-10 bg-green-500 top-50 text-white font-bold" onClick={() => {setEnd(null), setRoute(null), setStart(null)}}>hapus tanda</button> */}
+     </div>
+
+     <div className='w-full h-50 absolute top-120 bg-white p-5 rounded-tl-xl rounded-tr-xl'>
+      <div>
+        <h1>lokasi jemput</h1>
+        <input value={query} type="text" readOnly className="bg-white w-full h-10 pl-5 rounded-xl mt-2" placeholder="lokasi awal" />
+      </div>
      </div>
     </div> 
   )
@@ -104,12 +180,32 @@ function ChangeView({ center, zoom = 15}) {
   return null;
 }
 
+function LocationMarker({ setStart, setEnd, start, end}) {
+  useMapEvents({
+    click(e) {
+      if (!start) {
+        setStart(e.latlng);
+      } else if (!end) {
+        setEnd(e.latlng);
+    } else {
+      setStart(e.latlng);
+      setEnd(null);
+    }
+  }});
+}
+
 const Shuttle = () => {
   const [position, setPosition] = useState({
     lat: -8.65,
     lng: 115.82
   });
   const [userLocation, setUserLocation] = useState(null);
+
+  const [start, setStart] = useState(null);
+  const [end, setEnd] = useState(null); 
+  const [distance, setDistance] = useState(null);
+  const [route, setRoute] = useState(null);
+  const [searchLocation, setSearchLocation] = useState(null);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -130,11 +226,28 @@ const Shuttle = () => {
     }
   }, [])
 
+  useEffect(() => {
+    if (start && end) {
+      const jarak = haversine(start.lat, start.lng, end.lat, end.lng);
+      setDistance(jarak);
+
+      const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.routes && data.routes.length > 0) {
+            setRoute(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+          }
+        })
+        .catch(err => console.eror("Gagal mendapatkan rute:", err));
+    }
+  }, [start, end]);
+
   // console.log(coords);
 
   return (
     <div className={`h-[100vh] w-[100%]`}>
-      <SearchBox onSelect={(loc) => setPosition(loc)} userLocation={userLocation} />
+      <SearchBox onSelect={(loc) => setPosition(loc)} userLocation={userLocation} setStart={setStart} setEnd={setEnd} setRoute={setRoute} start={start} end={end} setSearchLocation={setSearchLocation} />
 
       <MapContainer center={[position.lat, position.lng]} zoom={13} scrollWheelZoom={true} zoomControl={false} className={`h-[100%] w-[100%] relative z-10`}>
         <TileLayer
@@ -144,11 +257,39 @@ const Shuttle = () => {
 
         <ChangeView center={position ? [position.lat, position.lng] : initial} zoom={15} />
 
-        <Marker position={[position.lat, position.lng]}>
-          <Popup>
-            ini marker default
-          </Popup>
-        </Marker>
+        
+
+        <LocationMarker setStart={setStart} setEnd={setEnd} start={start} end={end} />
+
+        {start && (
+          <Marker position={[start.lat, start.lng]}>
+            <Popup>Start Point</Popup>
+          </Marker>
+        )}
+        {end && (
+          <Marker position={[end.lat, end.lng]}>
+            <Popup>Start Point</Popup>
+          </Marker>
+        )}
+        {start && end && !route && (
+          <Polyline positions={[[start.lat, start.lng], [end.lat, end.lng]]} color="blue" />
+        )}
+
+        {route && (
+          <Polyline positions={route} color="blue" />
+        )}
+
+        {distance && (
+          <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded-xl shadow-lg font-bold">
+            jarak: {distance.toFixed(2)} km
+          </div>
+        )}
+
+        {/* {searchLocation && (
+          <Marker position={[searchLocation.lat, searchLocation.lng]}>
+            <Popup>{searchLocation.label}</Popup>
+          </Marker>
+        )} */}
       </MapContainer>
     </div>
   )

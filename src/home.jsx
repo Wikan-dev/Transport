@@ -55,14 +55,14 @@ const Home = () => {
     }
 
     return (
-        <div className="p-5">
+        <div className="p-5 w-full">
             <div className="flex">
                 <div className="w-10 h-10 bg-red-500 rounded-full"></div>
                 <h1 className="ml-5 font-bold relative top-1 text-[20px]">{nama}</h1>
             </div>
 
-            <div className="rounded-tl-2xl rounded-tr-2xl mt-5 absolute w-full left-0 drop-shadow-2xl/80 bg-red-500 h-auto inline-block ">
-                <Slider {...settings}>
+            <div className="rounded-tl-2xl rounded-tr-2xl mt-5 absolute w-full left-0 drop-shadow-2xl/80 bg-red-500 h-auto inline-block z-10 ">
+                <Slider {...settings} className="reltive z-10">
                     <div>
                         <img src={Image1} alt="image" className="rounded-tl-2xl rounded-tr-2xl h-auto w-full" />
                     </div>
@@ -85,10 +85,10 @@ const Home = () => {
                     <img src={Sponsor5} alt="sponsor" />
                 </div>
                 
-                <div className="absolute z-0 ">
-                    <img src={Background} alt="" className="w-full h-full bg-repeat" />
-                    <img src={Background} alt="" className="w-full h-full bg-repeat" />
-                    <img src={Background} alt="" className="w-full h-full bg-repeat" />
+                <div className="absolute inset-0 z-0 ">
+                    <div className="absolute inset-0 z-0 bg-repeat bg-center" style={{ backgroundImage: `url(${Background})`}}></div>
+                    {/* <img src={Background} alt="" className="w-full h-full bg-repeat" /> */}
+                    {/* <img src={Background} alt="" className="w-full h-full bg-repeat" /> */}
                 </div>
 
                 <div className="flex gap-20 justify-center mt-15 max-w-full flex-wrap">
