@@ -3,14 +3,17 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline 
 import "leaflet/dist/leaflet.css";
 import hapus from './assets/cancel.svg';
 import { data } from "react-router-dom";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-import L from "leaflet";
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-})
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
 
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius bumi dalam kilometer 
@@ -128,7 +131,7 @@ async function handleEnterLocation() {
       {result.length > 0 && (
         <ul className="px-5 font-bold text-[20px]">
           {result.map((place, i) => (
-            <li className="w-80 truncate bg-white my-3 p-2 rounded-xl border-b-2 drop-shadow-xl" key={i} onClick={() => {            
+            <li className="w-full truncate bg-white my-3 p-2 rounded-xl border-b-2 drop-shadow-xl" key={i} onClick={() => {            
             const loc = {
               lat: parseFloat(place.lat),
               lng: parseFloat(place.lon),
@@ -165,13 +168,6 @@ async function handleEnterLocation() {
      <div className="absolute flex flex-row">
       {/* <button className=" w-50 h-10 bg-green-500 top-50 text-white font-bold" onClick={() => handleEnterLocation()}>enter</button> */}
       {/* <button className=" w-50 h-10 bg-green-500 top-50 text-white font-bold" onClick={() => {setEnd(null), setRoute(null), setStart(null)}}>hapus tanda</button> */}
-     </div>
-
-     <div className='w-full h-50 absolute top-120 bg-white p-5 rounded-tl-xl rounded-tr-xl'>
-      <div>
-        <h1>lokasi jemput</h1>
-        <input value={query} type="text" readOnly className="bg-white w-full h-10 pl-5 rounded-xl mt-2" placeholder="lokasi awal" />
-      </div>
      </div>
     </div> 
   )
