@@ -4,6 +4,7 @@ import InputData from "./input";
 import Start from "./start";
 import Price from "./price";
 import Shuttle from "./transport";
+import Struk from "./struk";
 
 const App = () => {
   return (
@@ -15,6 +16,7 @@ const App = () => {
           <Route path="/start" element={<InputData />} ></Route>
           <Route path="/price" element={<Price />} ></Route>
           <Route path="/shuttle" element={<Shuttle />} ></Route>
+          <Route path="/struk" element={<Struk />} ></Route>
         </Routes>
       </BrowserRouter>
     </div>

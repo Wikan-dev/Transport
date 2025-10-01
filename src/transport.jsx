@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import hapus from './assets/cancel.svg';
@@ -32,10 +33,23 @@ function haversine(lat1, lon1, lat2, lon2) {
 const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, setRoute, setDistance }) => {
   const [show, setShow] = useState(false);
   let harga = Math.round(distance) * 3000;
-  // console.log(harga);
+  let jarak = Math.round(distance);
+  // console.log(show);
+
+  useEffect(() => {
+    if (akhir !== "" ) {
+      setShow(true);
+    }
+  }, [akhir]);
+
+  const navigate = useNavigate();
+
+  function handleClick() {
+    navigate('/struk', { state: { awal: awal, akhir: akhir, jarak: jarak, harga: harga } });
+  }
 
   return (
-    <div className="absolute z-50 bottom-0 w-full bg-white p-5 rounded-t-3xl drop-shadow-2xl transition-all duration-200 trnsition-ease-in" style={{ height: show || akhir !== "" ? '450px' : '50px'}}>
+    <div className="absolute z-50 bottom-0 w-full bg-white p-5 rounded-t-3xl drop-shadow-2xl transition-all duration-200 trnsition-ease-in" style={{ height: show ? '450px' : '50px'}}>
       <div onClick={() => setShow(!show)} className="w-full h-5">
         <div className="w-20 bg-gray-300 h-3 rounded-xl mx-auto"></div>
       </div>
@@ -66,7 +80,7 @@ const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, s
         <button className="h-12 w-1/2 bg-[#EF7721] font-bold text-white rounded-xl mt-3 leading-4" onClick={() => {setAwal(""), setStart(null), setRoute(null), setDistance(null)}} style={{ opacity: awal ? '1' : '0.5'}} >kosongkan titik jemput</button>
         <button className="h-12 w-1/2 bg-[#EF7721] font-bold text-white rounded-xl mt-3 px-3 leading-4 " onClick={() => {setAkhir(""), setEnd(null), setRoute(null), setDistance(null)}} style={{ opacity: akhir ? '1' : '0.5'}}>kosongkan titik antar</button>
       </div>
-      <button className="h-12 w-full bg-[#EF7721] font-bold text-white rounded-xl mt-3 ">Konfirmasi</button>
+      <button onClick={handleClick} className="h-12 w-full bg-[#EF7721] font-bold text-white rounded-xl mt-3 ">Konfirmasi</button>
     </div>
   )
 }
