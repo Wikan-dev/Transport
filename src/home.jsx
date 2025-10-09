@@ -12,11 +12,24 @@ import insta from './assets/Instagram.svg';
 import phone from './assets/Phone.svg';
 import car from './assets/car.svg';
 import data from '../backend/data/main.json';
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import Shuttle from "./transport";
+import { useEffect, useState } from "react";
 
-const MiniIcon = ({gambar, title}) => {
+const MiniIcon = ({gambar, title, arah}) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const dataInput = location.state;
+
+    const handleClick = () => {
+        navigate(`/${arah}`, { state: dataInput });
+    }
+
+    console.log(dataInput);
+
     return (
-        <div className="relative z-20">
+        <div onClick={handleClick} className="relative z-20">
             <div className="bg-white drop-shadow-xl w-14 p-2 rounded-full mx-auto">
                 <img src={gambar} alt="price list" />
             </div>
@@ -41,9 +54,37 @@ const TourList = ({ gambar, harga, nama }) => {
 }
 
 const Home = () => {
-    const { state } = useLocation();
-    let nama = state?.userName || [];
-    // console.log(nama);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const state = location.state || {};
+
+    // const dataInput = location.state;
+    console.log("dari home: ", state);
+    const [nama, setNama] = useState(state?.userName || "");
+    const [email, setEmail] = useState(state?.email || ""); 
+    // let nama = state?.userName || [];
+    // let email = state?.email || [];
+    
+    useEffect(() => {
+        if (state?.userName && state?.email) {
+            localStorage.setItem("userinfo", JSON.stringify({
+                userName: state.userName,
+                email: state.email
+            }));
+            setNama(state.userName);
+            setEmail(state.email);
+        } else {
+            const saved = localStorage.getItem("userinfo"); 
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                setNama(parsed.userName || ""); 
+                setEmail(parsed.email || "");
+            }
+        }
+    }, [state]);
+    
+    console.log("cuma nama: ", nama);
+
     var settings = {
         dots: false,
         infinite: true,
@@ -78,13 +119,13 @@ const Home = () => {
                     </div>
                 </Slider>
                 
-                <div className="bg-white absolute w-full justify-between px-2 top-60 h-12 p-2 flex flex-row z-20">
+                {/* <div className="bg-white absolute w-full justify-between px-2 top-60 h-12 p-2 flex flex-row z-20">
                     <img src={Sponsor1} alt="sponsor" />
                     <img src={Sponsor2} alt="sponsor" />
                     <img src={Sponsor3} alt="sponsor" />
                     <img src={Sponsor4} alt="sponsor" />
                     <img src={Sponsor5} alt="sponsor" />
-                </div>
+                </div> */}
                 
                 <div className="absolute inset-0 z-0 ">
                     <div className="absolute inset-0 z-0 bg-repeat bg-center" style={{ backgroundImage: `url(${Background})`}}></div>
@@ -94,11 +135,11 @@ const Home = () => {
 
                 <div className="flex gap-20 justify-center mt-15 max-w-full flex-wrap">
                     <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>
-                    <Link to='/shuttle'><MiniIcon gambar={car} title={'shuttle'} /></Link>
+                    <MiniIcon gambar={car} title={'shuttle'} arah={'shuttle'} />
                     <Link to='/Price'><MiniIcon gambar={listIcon} title={'Price List'} /></Link>   
                 </div>
 
-                <div className="relative z-20 px-5 mt-5 flex flex-wrap flex-row justify-center gap-15 px-7 max-w-full">
+                <div className="relative z-20 px-5 mt-5 flex flex-wrap flex-row justify-left lg:justify-center gap-10 px-7 max-w-full">
                     {data.tour.map((item, i) => (
                         <TourList key={i} gambar={import.meta.env.BASE_URL + item.gambar.slice(1)} harga={item.harga} nama={item.nama} />
                     ))}

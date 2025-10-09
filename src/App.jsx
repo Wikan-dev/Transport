@@ -5,6 +5,8 @@ import Start from "./start";
 import Price from "./price";
 import Shuttle from "./transport";
 import Struk from "./struk";
+import Test from "./test";
+import Succes from "./succes";
 
 const App = () => {
   return (
@@ -17,6 +19,8 @@ const App = () => {
           <Route path="/price" element={<Price />} ></Route>
           <Route path="/shuttle" element={<Shuttle />} ></Route>
           <Route path="/struk" element={<Struk />} ></Route>
+          <Route path="/test" element={<Test />} ></Route>
+          <Route path="/succes" element={<Succes />} ></Route>
         </Routes>
       </BrowserRouter>
     </div>

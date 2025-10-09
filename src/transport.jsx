@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import hapus from './assets/cancel.svg';
@@ -8,6 +8,7 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import L from "leaflet";
+import axios from "axios";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -15,6 +16,35 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
+
+const ZONA_BALI = [
+  { id: 1, name: "Tuban", lat: -8.739, lng: 115.166 },
+  { id: 2, name: "Kuta, Jimbaran", lat: -8.780, lng: 115.167 },
+  { id: 3, name: "Nusa Dua, Tanjung Benoa", lat: -8.805, lng: 115.229 },
+  { id: 4, name: "Legian, Seminyak, Kerobokan, Batubelig", lat: -8.678, lng: 115.162 },
+  { id: 5, name: "Sanur, Denpasar", lat: -8.670, lng: 115.244 },
+  { id: 6, name: "Pecatu, Uluwatu", lat: -8.829, lng: 115.086 },
+  { id: 7, name: "Seseh Cemagi, Pererenan, Canggu", lat: -8.647, lng: 115.122 },
+  { id: 8, name: "Mengwi, Tanah Lot", lat: -8.551, lng: 115.117 },
+  { id: 9, name: "Sukawati, Ubud, Gianyar", lat: -8.509, lng: 115.265 },
+  { id: 10, name: "Tegallalang, Keliki, Payangan", lat: -8.442, lng: 115.282 },
+  { id: 11, name: "Tabanan, Kerambitan", lat: -8.535, lng: 115.038 },
+  { id: 12, name: "Penebel, Jatiluwih, Bangli, Klungkung, Padangbai", lat: -8.414, lng: 115.357 },
+  { id: 13, name: "Selemadeg, Bedugul, Plaga", lat: -8.369, lng: 115.108 },
+  { id: 14, name: "Sidemen, Candidasa, Amed, Kintamani, Singaraja, Jembrana", lat: -8.305, lng: 115.205 },
+];
+
+const ZONE_PRICES = [
+  { from: 1, to: 2, price: 90000 },
+  { from: 1, to: 3, price: 105000 },
+  { from: 4, to: 5, price: 130000 },
+  { from: 6, to: 9, price: 260000 },
+  { from: 7, to: 8, price: 250000 },
+  { from: 12, to: 13, price: 550000 },
+  { from: 13, to: 14, price: 600000 },
+  // ...dan seterusnya, nanti tinggal dilengkapi
+];
+
 
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -30,11 +60,46 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, setRoute, setDistance }) => {
+const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, setRoute, setDistance, zonaAwal, zonaAkhir, hargaZona, setZonaAkhir, setZonaAwal, setHargaZona }) => {
+  const location = useLocation();
+  const dataInput = location.state;
   const [show, setShow] = useState(false);
-  let harga = Math.round(distance) * 3000;
+  const [form, setForm] = useState({
+    name: "",
+    pickup: "",
+    destination: ""
+  });
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      name: dataInput.userName,
+      pickup: awal,
+      destination: akhir,
+    }))
+  }, [awal, akhir, dataInput]);
+
+  const [status, setStatus] = useState("");
+  // let harga = Math.round(distance) * 3000;
+  let harga = 0;
+  console.log(awal, akhir, "nama: ", dataInput.userName);
+
+  //untuk pesan wa
+
+  //untuk harga
+  if (hargaZona != null) {
+    harga = hargaZona;
+  } else if (distance >= 10) {
+    harga = 200000;
+  } else if (distance) {
+    harga = 100000;
+  }
+
   let jarak = Math.round(distance);
+
   // console.log(show);
+  // console.log("dari shuttle: ", dataInput);
+  // console.log(dataInput.userName);
 
   useEffect(() => {
     if (akhir !== "" ) {
@@ -44,14 +109,45 @@ const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, s
 
   const navigate = useNavigate();
 
-  function handleClick() {
-    navigate('/struk', { state: { awal: awal, akhir: akhir, jarak: jarak, harga: harga } });
+  const handleClick = async (e) => {
+    //untuk fungsi wa
+    e.preventDefault();
+    setStatus("Mengirim");
+
+    try {
+      const res = await axios.post("http://localhost:5000/order", form);
+      if (res.data.success) {
+        setStatus("Pesanan dikirim ke admin wa");
+        if (awal && akhir != "") {
+          navigate('/struk', { state: { awal, akhir, jarak, harga, zonaAwal, zonaAkhir } });    
+        } else {
+          alert("Titik jemput dan titik antar harus diisi");
+        }
+      } else {
+        setStatus("Gagal meengirim pesanan");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Terjadi kesalahan saat mengirim pesanan");
+    }
+    //-----------------batas wa
+
   }
 
+
+  // console.log(distance)
   return (
     <div className="absolute z-50 bottom-0 w-full bg-white p-5 rounded-t-3xl drop-shadow-2xl transition-all duration-200 trnsition-ease-in" style={{ height: show ? '450px' : '50px'}}>
       <div onClick={() => setShow(!show)} className="w-full h-5">
         <div className="w-20 bg-gray-300 h-3 rounded-xl mx-auto"></div>
+
+        {/* {zonaAwal && zonaAkhir && (
+        <div className="mt-4 p-3 bg-gray-100 rounded-xl text-gray-700">
+          <p><b>Zona Jemput:</b> {zonaAwal.name}</p>
+          <p><b>Zona Antar:</b> {zonaAkhir.name}</p>
+          {hargaZona && <p className="font-bold text-lg mt-2">Harga zona: Rp {hargaZona.toLocaleString()}</p>}
+        </div>
+      )} */}
       </div>
         <div>
           <div className="mt-5">
@@ -63,6 +159,10 @@ const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, s
             <input type="text" value={akhir} readOnly className="truncate px-5 bg-white outline-1 w-full h-10 rounded-xl focus:outline-none" placeholder="input titik jemput" />
           </div>
         </div >
+        <div className="mt-5 text-sm text-gray-600">
+          {zonaAwal && <p>Zona Jemput: {zonaAwal.name}</p>}
+          {zonaAkhir && <p>Zona Antar: {zonaAkhir.name}</p>}
+        </div>
         <div className="flex justify-between mt-5">
           {distance && (
           <div>
@@ -77,177 +177,146 @@ const Pesanan = ({ awal, akhir, distance, setAwal, setAkhir, setStart, setEnd, s
         )}
         </div>
       <div className="flex gap-2">
-        <button className="h-12 w-1/2 bg-[#EF7721] font-bold text-white rounded-xl mt-3 leading-4" onClick={() => {setAwal(""), setStart(null), setRoute(null), setDistance(null)}} style={{ opacity: awal ? '1' : '0.5'}} >kosongkan titik jemput</button>
-        <button className="h-12 w-1/2 bg-[#EF7721] font-bold text-white rounded-xl mt-3 px-3 leading-4 " onClick={() => {setAkhir(""), setEnd(null), setRoute(null), setDistance(null)}} style={{ opacity: akhir ? '1' : '0.5'}}>kosongkan titik antar</button>
+        <button className="h-12 w-1/2 bg-[#EF7721] font-bold text-white rounded-xl mt-3 leading-4" onClick={() => {setAwal(""), setStart(null), setRoute(null), setDistance(null), setZonaAwal(null), setHargaZona(null)}} style={{ opacity: awal ? '1' : '0.5'}} >kosongkan titik jemput</button>
+        <button className="h-12 w-1/2 bg-[#EF7721] font-bold text-white rounded-xl mt-3 px-3 leading-4 " onClick={() => {setAkhir(""), setEnd(null), setRoute(null), setDistance(null), setZonaAkhir(null), setHargaZona(null)}} style={{ opacity: akhir ? '1' : '0.5'}}>kosongkan titik antar</button>
       </div>
-      <button onClick={handleClick} className="h-12 w-full bg-[#EF7721] font-bold text-white rounded-xl mt-3 ">Konfirmasi</button>
+      <button onClick={handleClick} className="h-12 w-full bg-[#EF7721] font-bold text-white rounded-xl mt-3">Konfirmasi</button>
     </div>
   )
 }
-function SearchBox({onSelect, userLocation, setStart, setEnd, setRoute, start, end , setSearchLocation, awal, setAwal, akhir, setAkhir}) {
+
+
+function SearchBox({
+  map,
+  onSelect,
+  userLocation,
+  setStart,
+  setEnd,
+  setRoute,
+  start,
+  end,
+  setSearchLocation,
+  awal,
+  setAwal,
+  akhir,
+  setAkhir,
+  onManualSelect,
+  enableFollowMode
+}) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState([]);
+  // const map = useMap();
+  // const { map } = props;
   
 
- useEffect(() => {
-  if (!query) {
-    setResult([]);
-    return;
-  }
-
-  const timeout = setTimeout(async () => {
-    const delta = 0.11;
-    // base url
-    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&viewbox=${userLocation.lng-delta},${userLocation.lat+delta},${userLocation.lng+delta},${userLocation.lat-delta}&bounded=1&limit=20`;
-
-    // kalau ada lokasi user, tambahin parameter supaya fokus di sekitar user
-    if (userLocation) {
-      url += `&lat=${userLocation.lat}&lon=${userLocation.lng}&bounded=1`;
+  useEffect(() => {
+    if (!query) {
+      setResult([]);
+      return;
     }
 
-    const res = await fetch(url);
-    let data = await res.json();
+    const timeout = setTimeout(async () => {
+      try {
+        // build URL only if userLocation exists, otherwise search global
+        let url;
+        const encoded = encodeURIComponent(query);
+        if (userLocation) {
+          const delta = 1;
+          url = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&viewbox=${userLocation.lng-delta},${userLocation.lat+delta},${userLocation.lng+delta},${userLocation.lat-delta}&bounded=1&limit=20&lat=${userLocation.lat}&lon=${userLocation.lng}`;
+        } else {
+          url = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=20`;
+        }
 
-    if (userLocation) {
-      // tambahin jarak ke tiap hasil
-      data = data.map((place) => ({
-        ...place,
-        distance: haversine(
-          userLocation.lat,
-          userLocation.lng,
-          parseFloat(place.lat),
-          parseFloat(place.lon)
-        ),
-      }));
+        const res = await fetch(url);
+        const data = await res.json();
 
-      // urutin biar yg terdekat muncul di atas
-      data.sort((a, b) => a.distance - b.distance);
+        let mapped = data;
+        if (userLocation && Array.isArray(data)) {
+          mapped = data.map((p) => ({
+            ...p,
+            distance: haversine(userLocation.lat, userLocation.lng, parseFloat(p.lat), parseFloat(p.lon))
+          }));
+          mapped.sort((a, b) => a.distance - b.distance);
+        }
+
+        setResult(mapped);
+      } catch (err) {
+        console.error("SearchBox fetch error:", err);
+        setResult([]);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [query, userLocation]);
+
+  // handle selection in one place so `place` is always defined inside this function
+  const handleSelect = (place) => {
+    if (!place) return;
+    const loc = {
+      lat: parseFloat(place.lat),
+      lng: parseFloat(place.lon),
+      label: place.display_name
+    };
+
+    // Prioritaskan start, lalu end
+    if (!start) {
+      setStart(loc);
+    } else if (!end) {
+      setEnd(loc);
+    } else {
+      // kalau keduanya sudah ada, replace start (atau ubah sesuai kebutuhan)
+      setStart(loc);
+      setEnd(null);
+      if (setRoute) setRoute(null);
     }
-
-    setResult(data);
-  }, 500);
-
-  return () => clearTimeout(timeout);
-}, [query, userLocation]);
-
-// async function handleEnterLocation() {
-//   if (!query) {
-//     alert("Please enter a location");
-//     return;
-//   }
-
-//   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`;
-//   const res = await fetch(url);
-//   const data = await res.json();
-
-//   if (data.length > 0) {
-//     const place = data[0];
-//     const loc = {
-//       lat: parseFloat(place.lat),
-//       lng: parseFloat(place.lon),
-//       label: place.display_name,
-//     };
-
-//     if (!start) {
-//       setStart(loc);
-//     } else if (!end) {
-//       setEnd(loc);
-//     } else {
-//       setStart(loc);
-//       setEnd(null);
-//       setRoute(null);
-//     }
-
     
+    // atur text label awal/akhir
+    if (!awal) setAwal(place.display_name);
+    else if (!akhir) setAkhir(place.display_name);
+    else {
+      setAwal(place.display_name);
+      setAkhir("");
+      if (setRoute) setRoute(null);
+    }
 
-//     setSearchLocation(loc);
-//     onSelect(loc);
-//     setQuery(place.display_name);
-//     setResult([]);
-//   } else {
-//     alert("Location not found");
-//   }
-//   // console.log(awal, akhir);
-// }a
+    // inform parent
+    onSelect && onSelect(loc);
+    if (onManualSelect) onManualSelect();
+    setSearchLocation && setSearchLocation(loc);
+    
+    // UI updates
+    setQuery(place.display_name);
+    setResult([]);
 
-
-// function handleSelect() {
-//   if (query != "") {
-//     setSelected(query);
-//     console.log("Selected location:", query);
-//   } else {
-//     alert("Please select a location");
-//   }
-// }
-// console.log(query);
-
-// console.log(start, end, route);
-
+    //untuk kamera map
+    // map.flyTo([loc.lat, loc.lng], 17, {duration: 1});
+  };
+  
   return (
     <div className="absolute z-20 bg-white w-[90%] left-[50%] right-[50%] translate-x-[-50%] mt-10 rounded-2xl pb-4">
-      <div className="hidden">
-        {/* <Pesanan awal={awal} akhir={akhir} /> */}
+      <img src={hapus} alt="cancel" onClick={() => { setQuery(""); setResult([]); }} className={`absolute w-10 right-4 top-6 ${result.length > 0 ? 'block' : 'hidden'}`} />
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="cari lokasi..." className="px-5 w-[85%] h-15 mt-3 focus:outline-none font-bold text-[20px] truncate" />
+
+      <div className={`transition-all duration-300 ease-in-out overflow-auto ${result.length > 0 ? "max-h-60 opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
+        {result.length > 0 && (
+          <ul className="px-5 font-bold text-[20px]">
+            {result.map((place, i) => (
+              <li key={i} className="w-full truncate bg-white my-3 p-2 rounded-xl border-b-2 drop-shadow-xl cursor-pointer"
+                onClick={() => handleSelect(place)}
+              >
+                {place.distance != null && <span className="block text-sm text-gray-500">{place.distance.toFixed(2)} km</span>}
+                {place.display_name}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
+      {/* <button onClick={enableFollowMode}>Ikuti Lokasi Saya</button> */}
 
-      <img src={hapus} alt="cancel" onClick={() => {setQuery(""), setResult([])}} className={`absolute w-10 right-4 top-6  ${result.length > 0 ? 'block' : 'hidden'}`} />
-      <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="cari lokasi..." className="px-5 w-[85%] h-15 mt-3 focus:outline-none font-bold text-[20px] truncate" />
-     <div className={`transition-all duration-300 ease-in-out overflow-auto ${result.length > 0 ? "max-h-60 opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
-      {result.length > 0 && (
-        <ul className="px-5 font-bold text-[20px]">
-          {result.map((place, i) => (
-            <li className="w-full truncate bg-white my-3 p-2 rounded-xl border-b-2 drop-shadow-xl" key={i} onClick={() => {            
-            const loc = {
-              lat: parseFloat(place.lat),
-              lng: parseFloat(place.lon),
-              label: place.display_name,
-            };
-
-            if (!start) {
-              setStart(loc);
-            } else if (!end) {
-              setEnd(loc);
-            } else {
-              setStart(loc);
-              setEnd(null);
-              setRoute(null);
-            }
-
-            if (!awal) {
-              setAwal(place.display_name);
-            } else if (!akhir) {
-              setAkhir(place.display_name);
-            } else {
-              setAwal(place.display_name);
-              setAkhir("");
-              setRoute(null);
-            }
-
-            console.log("awal: ", awal, "Akhir: ", akhir);
-
-            onSelect(loc);
-            setResult([])
-            setQuery(place.display_name);
-            setSearchLocation(loc);
-          }}>
-              {place.distance && (
-                    <span className="block text-sm text-gray-500">
-                      {place.distance.toFixed(2)} km
-                    </span>
-              )}
-              {place.display_name}
-            </li>
-          ))}
-        </ul>
-      )}
-     </div>
-
-     <div className="absolute flex flex-row">
-      {/* <button className=" w-50 h-10 bg-green-500 top-50 text-white font-bold" onClick={() => handleEnterLocation()}>enter</button> */}
-      {/* <button className=" w-50 h-10 bg-green-500 top-50 text-white font-bold" onClick={() => {setEnd(null), setRoute(null), setStart(null)}}>hapus tanda</button> */}
-     </div>
-    </div> 
-  )
+    </div>
+  );
 }
+
 
 function ChangeView({ center, zoom = 15}) {
   const map = useMap();
@@ -263,15 +332,10 @@ function ChangeView({ center, zoom = 15}) {
 function LocationMarker({ setStart, setEnd, start, end}) {
   useMapEvents({
     click(e) {
-      if (!start) {
-        setStart(e.latlng);
-      } else if (!end) {
-        setEnd(e.latlng);
-    } else {
-      setStart(e.latlng);
-      setEnd(null);
-    }
+      if (!start) setStart(e.latlng);
+      else if (!end) setEnd
   }});
+  return null;
 }
 
 function LocateButton({ userLocation, setUserMarker, setStart, setAwal, fetchNearbyPlaces, setPosition }) {
@@ -299,7 +363,7 @@ function LocateButton({ userLocation, setUserMarker, setStart, setAwal, fetchNea
               setUserMarker(coords);
               setPosition(coords);
               setShow(true);
-              console.log(show);
+              // console.log(show);
 
               const places = await fetchNearbyPlaces(coords.lat, coords.lng);
 
@@ -330,6 +394,30 @@ function LocateButton({ userLocation, setUserMarker, setStart, setAwal, fetchNea
 }
 
 
+function getZonePrice(zoneStart, zoneEnd) {
+  if (!zoneStart || !zoneEnd) return null;
+
+  const found = ZONE_PRICES.find(
+    (z) => 
+    (z.from === zoneStart.id && z.to === zoneEnd.id) ||
+    (z.to === zoneStart.id && z.from === zoneEnd.id)
+  );
+
+  return found ? found.price : null;
+}
+
+function getNearestZone(lat, lng) {
+  let nearest = null;
+  let minDistance = Infinity;
+  ZONA_BALI.forEach((zone) => {
+    const d = haversine(lat, lng, zone.lat, zone.lng);
+    if (d < minDistance) {
+      minDistance = d;
+      nearest = zone;
+    }
+  });
+  return nearest;
+}
 
 const Shuttle = () => {
   const [awal, setAwal] = useState("");
@@ -339,7 +427,18 @@ const Shuttle = () => {
     lng: 115.82
   });
   const [userLocation, setUserLocation] = useState(null);
+  //untuk harga
+  const [zonaAwal, setZonaAwal] = useState(null);
+  const [zonaAkhir, setZonaAkhir] = useState(null);
+  const [hargaZona, setHargaZona] = useState(null);
 
+  //untuk bug kamera
+  const initializedRef = useRef(false);
+  const manualInitializedRef = useRef(false);
+
+  
+  
+  
   const [start, setStart] = useState(null);
   const [end, setEnd] = useState(null); 
   const [distance, setDistance] = useState(null);
@@ -347,8 +446,20 @@ const Shuttle = () => {
   const [searchLocation, setSearchLocation] = useState(null);
   const [userMarker, setUserMarker] = useState(null);
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
+  
+  const notifyManualSelect = () => {
+    manualInitializedRef.current = true
+  };
 
-    async function fetchNearbyPlaces(lat, lng) {
+  const enableFollowMode = () => {
+    manualInitializedRef.current = false;
+    initializedRef.current = false;
+    if (userLocation) {
+      setPosition(userLocation);
+    }
+  }
+
+  async function fetchNearbyPlaces(lat, lng) {
     const radius = 500;
     const query = `
     [out:json];
@@ -379,23 +490,40 @@ const Shuttle = () => {
   } 
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const coords = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          };
-          setUserLocation(coords);
-          setPosition(coords);
-        },
-        (err) => {
-          console.error(err);
-          alert("Gagal mendapatkan lokasi Anda. Menggunakan lokasi default.");
-        }
-      );
+    if (!navigator.geolocation) return;
+
+    const succes = (pos) => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setUserLocation(loc);
+
+      if (!initializedRef.current && !manualInitializedRef.current) {
+        setPosition(loc);
+        initializedRef.current = true;
+      }
+    };
+
+    const err = (e) => {
+      console.error("Geolocation eror: ", e);
+    };
+
+    const watchId = navigator.geolocation.watchPosition(succes, err, {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 100000
+    });
+
+    //cleanup
+    return () => {
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (zonaAwal && zonaAkhir) {
+      const price = getZonePrice(zonaAwal, zonaAkhir);
+      setHargaZona(price);
     }
-  }, [])
+  }, [zonaAwal, zonaAkhir])
 
   useEffect(() => {
     if (start && end) {
@@ -414,17 +542,34 @@ const Shuttle = () => {
     }
   }, [start, end]);
 
+  useEffect(() => {
+    if (start && end) {
+      const nearestStartZone = getNearestZone(start.lat, start.lng);
+      const nearestEndZone = getNearestZone(end.lat, end.lng);
+
+      setZonaAwal(nearestStartZone);
+      setZonaAkhir(nearestEndZone);
+
+      const price = getZonePrice(nearestStartZone, nearestEndZone);
+      setHargaZona(price);
+    } else {
+      setHargaZona(null);
+    }
+  }, [start, end]);
+
   // console.log(coords);
+
+  const mapRef = useRef();
 
   return (
     <div className={`h-[100vh] w-[100%]`}>
-      <Pesanan awal={awal} akhir={akhir} distance={distance} setAwal={setAwal} setAkhir={setAkhir} setStart={setStart} setEnd={setEnd} setRoute={setRoute} setDistance={setDistance} />
+      <Pesanan awal={awal} akhir={akhir} distance={distance} setAwal={setAwal} setAkhir={setAkhir} setStart={setStart} setEnd={setEnd} setRoute={setRoute} setDistance={setDistance} zonaAwal={zonaAwal} zonaAkhir={zonaAkhir} hargaZona={hargaZona} setZonaAwal={setZonaAwal} setZonaAkhir={setZonaAkhir} setHargaZona={setHargaZona} />
 
       <LocateButton setAwal={setAwal} setPosition={setPosition} userLocation={userLocation} setUserMarker={setUserMarker} setStart={setStart} start={start} fetchNearbyPlaces={fetchNearbyPlaces} />
 
-      <SearchBox onSelect={(loc) => setPosition(loc)} userLocation={userLocation} setStart={setStart} setEnd={setEnd} setRoute={setRoute} start={start} end={end} setSearchLocation={setSearchLocation} awal={awal} setAwal={setAwal} akhir={akhir} setAkhir={setAkhir} />
+      <SearchBox onSelect={(loc) => setPosition(loc)} userLocation={userLocation} setStart={setStart} setEnd={setEnd} setRoute={setRoute} start={start} end={end} setSearchLocation={setSearchLocation} awal={awal} setAwal={setAwal} akhir={akhir} setAkhir={setAkhir} map={mapRef.current} onManualSelect={notifyManualSelect} enableFollowMode={enableFollowMode} />
 
-      <MapContainer center={[position.lat, position.lng]} zoom={13} scrollWheelZoom={true} zoomControl={false} className={`h-[100%] w-[100%] relative z-10`}>
+      <MapContainer center={[position.lat, position.lng]} zoom={13} scrollWheelZoom={true} zoomControl={false} className={`h-[100%] w-[100%] relative z-10`} whenCreated={(mapInstance) => (mapRef.current = mapInstance)}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
